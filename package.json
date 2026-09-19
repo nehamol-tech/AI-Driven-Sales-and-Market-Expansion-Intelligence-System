@@ -1,0 +1,20 @@
+{
+  "name": "ai-sales-expansion-engine",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build:shared": "pnpm --filter @ai-sales/shared build",
+    "dev": "pnpm build:shared && pnpm --parallel --filter backend --filter frontend dev",
+    "dev:backend": "pnpm build:shared && pnpm --filter backend dev",
+    "dev:frontend": "pnpm build:shared && pnpm --filter frontend dev",
+    "build": "pnpm build:shared && pnpm --filter backend build && pnpm --filter frontend build",
+    "lint": "pnpm --filter backend lint && pnpm --filter frontend lint",
+    "typecheck": "pnpm build:shared && pnpm --filter backend typecheck && pnpm --filter frontend typecheck",
+    "test": "pnpm build:shared && pnpm --filter backend test",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:seed": "pnpm --filter backend db:seed"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

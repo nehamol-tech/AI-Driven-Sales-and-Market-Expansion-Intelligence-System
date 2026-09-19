@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * "Deep Wine" — the app's one and only palette (no light/dark toggle
+   * exists in this app; see .dark below for why it mirrors :root).
+   *
+   * This is v4: the user asked for the whole thing "some more darker" (no
+   * exact hex given), so every surface/accent below is the same v3 hue,
+   * darkened by lowering lightness ~35-45% while keeping saturation and hue
+   * essentially fixed: Large areas #060405 (was #0B0809), Secondary
+   * background #0A0607 (was #120B0D), Cards #100A0B (was #181012), border
+   * tier #280B11 (was #3B1018, Deep wine), --primary #4A111A (was #6E1825,
+   * Rich red), --destructive/Accent #81222F (was #A52A3A). Text stays the
+   * same ivory (darkening the surfaces alone increases text contrast, which
+   * is the desired direction — dimming the text too would fight that).
+   * --muted-foreground nudged one notch darker too (#A19195, was a lighter
+   * warm grey) to stay proportionate. --ember-bright (glow/hover accent)
+   * darkened the same way as Accent.
+   */
+  :root {
+    --background: 340 20% 2%; /* #060405 */
+    --foreground: 30 33% 95%; /* Text — ivory/white, unchanged */
+
+    --card: 345 22% 5%; /* #100A0B */
+    --card-foreground: 30 33% 95%;
+
+    --popover: 345 22% 5%;
+    --popover-foreground: 30 33% 95%;
+
+    --primary: 350 68% 24%; /* #671422 — richer, more saturated cherry-wine red per user feedback (was #4A111A, reading as too dark/muddy to register as a color) */
+    --primary-foreground: 30 33% 95%;
+
+    --secondary: 343 26% 3%; /* #0A0607 */
+    --secondary-foreground: 30 33% 95%;
+
+    --muted: 343 26% 3%;
+    --muted-foreground: 30 6% 85%; /* #DBD9D7 — brightened per user feedback: secondary/label text (search placeholders, field labels, breadcrumbs) was reading as dim muddy grey against the dark surfaces; now a near-white warm-neutral, still one step dimmer than --foreground for hierarchy */
+
+    --accent: 343 26% 3%;
+    --accent-foreground: 30 33% 95%;
+
+    --destructive: 352 58% 32%; /* #81222F */
+    --destructive-foreground: 30 33% 95%;
+
+    --border: 349 55% 10%; /* #280B11 */
+    --input: 349 55% 10%;
+    --ring: 350 68% 24%;
+
+    /* Glow/hover accent on important interactive/AI elements — a brightened
+       tint of the Accent hue, distinct from the deeper --primary rich red
+       used for solid fills. Additive token, nothing existing renamed (kept
+       the --ember-bright name from this redesign's earlier working title to
+       avoid unrelated churn). */
+    --ember-bright: 352 62% 48%; /* #B23348 — nudged up alongside --primary so the glow accent still reads brighter than the (now richer) primary fill */
+
+    --radius: 0.625rem;
+  }
+
+  /* No theme toggle exists anywhere in this app (confirmed before this
+     redesign) — .dark mirrors :root only so this block never contradicts the
+     single real palette if a toggle is ever added later. */
+  .dark {
+    --background: 340 20% 2%;
+    --foreground: 30 33% 95%;
+
+    --card: 345 22% 5%;
+    --card-foreground: 30 33% 95%;
+
+    --popover: 345 22% 5%;
+    --popover-foreground: 30 33% 95%;
+
+    --primary: 350 68% 24%;
+    --primary-foreground: 30 33% 95%;
+
+    --secondary: 343 26% 3%;
+    --secondary-foreground: 30 33% 95%;
+
+    --muted: 343 26% 3%;
+    --muted-foreground: 30 6% 85%;
+
+    --accent: 343 26% 3%;
+    --accent-foreground: 30 33% 95%;
+
+    --destructive: 352 58% 32%;
+    --destructive-foreground: 30 33% 95%;
+
+    --border: 349 55% 10%;
+    --input: 349 55% 10%;
+    --ring: 350 68% 24%;
+
+    --ember-bright: 352 62% 48%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-sales-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sales_engine
+      POSTGRES_PASSWORD: sales_engine_dev_password
+      POSTGRES_DB: ai_sales_expansion_engine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sales_engine -d ai_sales_expansion_engine"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

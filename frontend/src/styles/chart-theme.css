@@ -1,0 +1,28 @@
+/*
+ * Shared recharts color tokens ("Deep Wine" palette) — consumed by chart
+ * components via `var(--series-1)` etc. This used to be duplicated verbatim
+ * inline in every chart component with light/dark-media-query branches;
+ * since the app now has exactly one (dark) palette and no theme toggle, this
+ * is a single flat block imported once by every chart.
+ *
+ * Per the design direction, charts stay mostly neutral (white/grey) — red is
+ * reserved only for the data that's genuinely important to call out. So:
+ * --series-1 (the default/primary line in every chart today — "actual"
+ * revenue, "new customers") is a neutral ivory/grey, unchanged by the v4
+ * darkening pass (it's not a surface color, and dimming the readable data
+ * line would hurt legibility). --series-2 (the secondary/flagged line —
+ * "projected" revenue, "returning customers") is darkened to match the new
+ * --destructive value (#81222F, was #A52A3A) so the chart accent stays
+ * consistent with the rest of the app's darker red.
+ * --text-secondary: matches the current --muted-foreground (#DBD9D7,
+ * brightened per user feedback so axis/legend labels read as near-white
+ * rather than dim grey).
+ * --gridline: darkened to match the new, darker card background — still a
+ * faint wine-tinted line, barely above it.
+ */
+.viz-root {
+  --series-1: #e8e2df;
+  --series-2: #81222f;
+  --text-secondary: #dbd9d7;
+  --gridline: #150c0e;
+}

@@ -37,7 +37,7 @@ export interface SalesTrendFilters {
 }
 
 function buildWhere(companyId: string, filters: SalesTrendFilters): Record<string, unknown> {
-  const where: Record<string, unknown> = { companyId };
+  const where: Record<string, unknown> = { companyId, cancelledAt: null };
   if (filters.dateFrom || filters.dateTo) {
     const dateFilter: Record<string, Date> = {};
     if (filters.dateFrom) dateFilter.gte = filters.dateFrom;

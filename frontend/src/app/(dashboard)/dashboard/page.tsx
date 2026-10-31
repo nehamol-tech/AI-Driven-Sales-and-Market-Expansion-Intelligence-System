@@ -31,6 +31,7 @@ import { useOptimizationRecommendations, useGenerateRecommendations } from "@/ho
 import { usePermissions } from "@/hooks/use-permissions";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { FmsDataCard } from "@/components/dashboard/fms-data-card";
+import { CustomerProductOrdersCard } from "@/components/dashboard/fms-orders-card";
 import { RevenueTrendChart } from "@/components/revenue-analytics/revenue-trend-chart";
 import { MethodBadge } from "@/components/leads/method-badge";
 import { TYPE_LABELS } from "@/components/optimization/recommendation-card";
@@ -599,6 +600,9 @@ export default function DashboardPage() {
 
       {/* FMS Data — read-only preview from the connected FMS Google Sheet, fetched via our own backend */}
       <FmsDataCard />
+
+      {/* Customer & Product Orders — read-only preview from the "Form responses 2" FMS sheet tab */}
+      <CustomerProductOrdersCard />
     </div>
   );
 }

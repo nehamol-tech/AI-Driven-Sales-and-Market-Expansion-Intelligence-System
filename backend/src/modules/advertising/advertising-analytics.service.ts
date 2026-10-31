@@ -80,7 +80,7 @@ async function computeAttributedRevenue(
   let revenueSum = 0;
   for (const accountId of matchedAccountIds) {
     const salesAgg = await deps.salesRecord.aggregate({
-      where: { companyId, accountId, date: { gte: campaign.startDate } },
+      where: { companyId, accountId, date: { gte: campaign.startDate }, cancelledAt: null },
       _sum: { orderValue: true },
     });
     revenueSum += Number(salesAgg?._sum?.orderValue ?? 0);

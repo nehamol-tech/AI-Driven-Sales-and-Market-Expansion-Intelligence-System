@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -17,10 +17,18 @@ import {
   Megaphone,
   Warehouse,
   Sparkles,
+  Database,
+  Loader2,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
+
+/** Small spinner on the clicked sidebar item until its page has loaded — instant feedback on click. */
+function NavPendingIndicator() {
+  const { pending } = useLinkStatus();
+  return pending ? <Loader2 aria-label="Loading" className="ml-auto h-3.5 w-3.5 animate-spin" /> : null;
+}
 
 interface NavItem {
   href: string;
@@ -52,6 +60,7 @@ export function Sidebar({
     { href: "/advertising", label: "Advertising", icon: Megaphone, show: true },
     { href: "/distributors", label: "Distributors", icon: Warehouse, show: true },
     { href: "/optimization", label: "AI Optimization", icon: Sparkles, show: true },
+    { href: "/fms", label: "FMS Data", icon: Database, show: true },
     { href: "/assistant", label: "Ask Sales AI", icon: MessageCircleQuestion, show: true },
     { href: "/users", label: "Users", icon: Users, show: canManageUsers },
   ];
@@ -111,6 +120,7 @@ export function Sidebar({
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
+                  <NavPendingIndicator />
                 </Link>
               );
             })}

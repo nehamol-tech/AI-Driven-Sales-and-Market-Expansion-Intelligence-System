@@ -27,7 +27,7 @@ function ok<T>(value: T): MetricValue<T> {
 const insufficientData: MetricValue<never> = { status: "insufficient_data" };
 
 export async function getDashboardOverview(prisma: DashboardPrismaDeps, companyId: string): Promise<DashboardOverviewDTO> {
-  const where = { companyId };
+  const where = { companyId, cancelledAt: null };
 
   const [salesAggregate, totalCustomerRows, newCustomers, targetExpansionStateCount, topProductGroup] = await Promise.all([
     prisma.salesRecord.aggregate({ where, _sum: { orderValue: true }, _count: { _all: true } }),

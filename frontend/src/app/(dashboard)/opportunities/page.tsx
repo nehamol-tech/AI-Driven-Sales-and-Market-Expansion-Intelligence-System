@@ -7,6 +7,8 @@ import { OPPORTUNITY_TYPES } from "@ai-sales/shared";
 import { useOpportunities, useRegenerateOpportunities } from "@/hooks/use-opportunities";
 import { usePermissions } from "@/hooks/use-permissions";
 import { OpportunitySummaryGrid } from "@/components/opportunities/opportunity-summary-grid";
+import { opportunityCategoryHref } from "@/components/opportunities/opportunity-categories";
+import { OverdueCard } from "@/components/opportunities/overdue-accounts-view";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -81,7 +83,9 @@ export default function OpportunitiesPage() {
         ) : null}
       </div>
 
-      <OpportunitySummaryGrid summary={data} isLoading={isLoading} />
+      <OpportunitySummaryGrid summary={data} isLoading={isLoading} hrefFor={opportunityCategoryHref} />
+
+      <OverdueCard />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>

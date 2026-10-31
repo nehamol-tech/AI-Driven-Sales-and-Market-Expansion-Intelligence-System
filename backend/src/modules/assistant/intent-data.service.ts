@@ -58,7 +58,7 @@ async function gatherAccountOrderStats(deps: AssistantPrismaDeps, companyId: str
 
   const accountIds = accounts.map((a: any) => a.id as string);
   const salesRecords = await deps.salesRecord.findMany({
-    where: { companyId, accountId: { in: accountIds } },
+    where: { companyId, accountId: { in: accountIds }, cancelledAt: null },
     select: { accountId: true, date: true, orderValue: true },
   });
 

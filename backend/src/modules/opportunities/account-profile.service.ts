@@ -122,7 +122,7 @@ export async function gatherAccountProfiles(
 
   const [salesRecords, latestScores, rawProducts] = await Promise.all([
     deps.salesRecord.findMany({
-      where: { companyId, accountId: { in: accountIds } },
+      where: { companyId, accountId: { in: accountIds }, cancelledAt: null },
       select: { accountId: true, date: true, orderValue: true, productId: true },
     }),
     deps.leadScore.findMany({

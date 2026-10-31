@@ -147,7 +147,7 @@ export async function gatherStateProfiles(deps: MarketExpansionPrismaDeps, compa
 
   const [salesRecords, latestScores] = await Promise.all([
     deps.salesRecord.findMany({
-      where: { companyId, stateId: { not: null } },
+      where: { companyId, stateId: { not: null }, cancelledAt: null },
       select: {
         stateId: true,
         cityId: true,

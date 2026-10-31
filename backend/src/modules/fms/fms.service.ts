@@ -33,7 +33,7 @@ export async function getFmsData(client: FmsClient, params: FetchFmsDataParams):
       count: result.body.count,
       totalRows: result.body.totalRows,
       data: result.body.data,
-      fetchedAt: new Date().toISOString(),
+      fetchedAt: result.fetchedAt ?? new Date().toISOString(),
       dataSourceType: "EXTERNAL_DATA",
     },
   };

@@ -60,7 +60,7 @@ export interface SalesRecordDTO {
   salespersonId: string | null;
   salespersonName: string | null;
   isNewCustomer: boolean;
-  source: "MANUAL" | "CSV_IMPORT";
+  source: "MANUAL" | "CSV_IMPORT" | "FMS_SYNC";
   createdAt: string;
   /** Phase 8: the Distributor this order is attributed to, if any — purely additive, powers distributor-expansion.service.ts's totalRevenue/orderCount. */
   distributorId?: string | null;

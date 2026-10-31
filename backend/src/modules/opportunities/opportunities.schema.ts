@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { DAILY_PRIORITY_LEVELS, OPPORTUNITY_TYPES } from "@ai-sales/shared";
+import { DAILY_PRIORITY_LEVELS, OPPORTUNITY_CATEGORIES, OPPORTUNITY_TYPES, OVERDUE_AGE_BUCKETS, OVERDUE_SORTS } from "@ai-sales/shared";
+import { MAX_PAGE_SIZE } from "../../config/constants.js";
 
 /** Caps how many top-ranked candidates get narrated via one batched AI call — cost control, mirrors Phase 3A's SALES_AGENT_DEFAULT_LIMIT/MAX_LIMIT pattern. */
 export const OPPORTUNITIES_DEFAULT_LIMIT = 15;
@@ -79,3 +80,37 @@ export function parseAIOpportunityResponse(rawContent: string, requestedIds: str
 
   return entries;
 }
+
+/** GET /api/sales-agent/opportunities/accounts — one Opportunity Center card's full list, paged server-side. */
+export const opportunityAccountsQuerySchema = z.object({
+  /** The card: HIGH_PRIORITY or an opportunity type. */
+  type: z.enum(OPPORTUNITY_CATEGORIES),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(MAX_PAGE_SIZE).default(25),
+  search: z.string().trim().min(1).max(200).optional(),
+  /** Narrows within the card (e.g. High Priority → only REORDER). */
+  opportunityType: z.enum(OPPORTUNITY_TYPES).optional(),
+  priority: z.enum(DAILY_PRIORITY_LEVELS).optional(),
+});
+export type OpportunityAccountsQuery = z.infer<typeof opportunityAccountsQuerySchema>;
+
+/** GET /api/sales-agent/opportunities/overdue — accounts with overdue payments, paged server-side. */
+export const overdueAccountsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(MAX_PAGE_SIZE).default(25),
+  search: z.string().trim().min(1).max(200).optional(),
+  age: z.enum(OVERDUE_AGE_BUCKETS).optional(),
+  sort: z.enum(OVERDUE_SORTS).default("amount"),
+});
+export type OverdueAccountsQuery = z.infer<typeof overdueAccountsQuerySchema>;
+
+/** GET /overdue/:accountId/bills — one overdue customer's bills, paged. */
+export const overdueCustomerBillsParamsSchema = z.object({ accountId: z.string().trim().min(1).max(100) });
+export const overdueCustomerBillsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(MAX_PAGE_SIZE).default(25),
+});
+export type OverdueCustomerBillsQuery = z.infer<typeof overdueCustomerBillsQuerySchema>;
+
+/** GET /overdue/bills/:billNo — one bill's payment-sheet rows and synced order. */
+export const overdueBillDetailParamsSchema = z.object({ billNo: z.string().trim().min(1).max(50) });

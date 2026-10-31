@@ -20,6 +20,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
             },
             refetchOnWindowFocus: false,
             staleTime: 30_000,
+            // Keep data from pages visited earlier for 30 min (default 5): going back
+            // to a page shows it instantly and refreshes it in the background
+            // (once older than staleTime).
+            gcTime: 30 * 60_000,
           },
           mutations: {
             retry: false,

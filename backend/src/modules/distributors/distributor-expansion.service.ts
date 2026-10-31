@@ -111,7 +111,7 @@ export async function computeDistributorPerformance(deps: DistributorExpansionPr
   const distributorIds = (distributors as { id: string }[]).map((d) => d.id);
   const grouped = await deps.salesRecord.groupBy({
     by: ["distributorId"],
-    where: { companyId, distributorId: { in: distributorIds } },
+    where: { companyId, distributorId: { in: distributorIds }, cancelledAt: null },
     _sum: { orderValue: true },
     _count: { _all: true },
   });

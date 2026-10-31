@@ -23,7 +23,7 @@ async function aggregateOrdersFor(prisma: PrismaClient, companyId: string, accou
   if (accountIds.length === 0) return new Map();
   const groups = await prisma.salesRecord.groupBy({
     by: ["accountId"],
-    where: { companyId, accountId: { in: accountIds } },
+    where: { companyId, accountId: { in: accountIds }, cancelledAt: null },
     _count: { _all: true },
     _sum: { orderValue: true },
     _max: { date: true },

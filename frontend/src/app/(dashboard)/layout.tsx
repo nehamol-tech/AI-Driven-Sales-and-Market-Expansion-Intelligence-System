@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { PageNav } from "@/components/layout/page-nav";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLayout({
@@ -52,7 +53,10 @@ export default function DashboardLayout({
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-h-screen flex-1 flex-col lg:pl-0">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">
+          <PageNav />
+          {children}
+        </main>
       </div>
     </div>
   );

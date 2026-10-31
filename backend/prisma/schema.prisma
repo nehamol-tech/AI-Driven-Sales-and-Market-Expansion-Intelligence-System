@@ -24,6 +24,7 @@ enum DataSourceType {
 enum SalesRecordSource {
   MANUAL
   CSV_IMPORT
+  FMS_SYNC
 }
 
 enum ProspectStatus {
@@ -311,9 +312,28 @@ model SalesRecord {
   account       Account?          @relation(fields: [accountId], references: [id])
   distributorId String?
   distributor   Distributor?      @relation(fields: [distributorId], references: [id], onDelete: SetNull)
+  // Phase 2A (FMS sync hardening) — both additive, both null for every
+  // existing MANUAL/CSV_IMPORT record and unused by any of them.
+  // externalRef: a deterministic identity from the originating external
+  // source (for FMS_SYNC: "<Bill No.>|<टाइमस्टैम्प>"), enforced unique per
+  // (companyId, source) below so the DB itself — not just application
+  // logic — rejects a duplicate re-sync of the same source order. Multiple
+  // NULLs (every MANUAL/CSV_IMPORT row) never collide under this
+  // constraint — that's standard Postgres unique-index semantics.
+  // metadata: the original source row's fields that have no dedicated
+  // column here (raw "Product and Qty" text, Bill No., timestamp, Order
+  // Taken, Dispatched By, PDC Cheque Date, Bill Amount) — preserved
+  // verbatim, never interpreted, never read by any existing service.
+  externalRef   String?
+  metadata      Json?
+  // Set when the source bill was cancelled (FMS: Customer Name "CANCELLED"
+  // with a blank Bill Amount). The record is kept for history; sales totals
+  // and analytics exclude it (`cancelledAt: null`).
+  cancelledAt   DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
+  @@unique([companyId, source, externalRef])
   @@index([companyId, date])
   @@index([stateId])
   @@index([industryId])

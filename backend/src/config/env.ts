@@ -20,6 +20,26 @@ const envSchema = z.object({
   // Sheet. Optional — when unset, the /api/fms endpoint reports
   // `configured: false` rather than fabricating data (see fms-client.factory.ts).
   FMS_API_URL: z.string().url().optional(),
+  // Read-only paginated Apps Script Web App (?sheet=&limit=&offset=) for the
+  // same sheets. Optional — when set, normal FMS reads use it; FMS_API_URL is
+  // still used for sheets only it serves ("FMS Response") and as the fallback
+  // when this is unset (see fms-client.factory.ts).
+  FMS_PAGED_API_URL: z.string().url().optional(),
+  // Automatic FMS sync (fms-auto-sync.ts): runs the "FMS Response" history
+  // sync in the background. Off unless explicitly "true".
+  FMS_AUTO_SYNC_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  FMS_AUTO_SYNC_INTERVAL_MINUTES: z.coerce.number().min(1).default(5),
+  // Negative Bill Amount rows in "FMS Response" are adjustments/reversals of
+  // the bill with the same Bill No. (net amount) rather than invalid rows.
+  FMS_NEGATIVE_ADJUSTMENTS_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  // Which company the sheet belongs to; optional while there is only one.
+  FMS_AUTO_SYNC_COMPANY_ID: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

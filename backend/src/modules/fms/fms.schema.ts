@@ -14,3 +14,11 @@ export const fmsDataQuerySchema = z.object({
 });
 
 export type FmsDataQuery = z.infer<typeof fmsDataQuerySchema>;
+
+/** Paging for GET /api/fms/fulfilment. The whole sheet is always read and summarised; only the returned order list is paged. */
+export const fmsFulfilmentQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(25),
+});
+
+export type FmsFulfilmentQuery = z.infer<typeof fmsFulfilmentQuerySchema>;

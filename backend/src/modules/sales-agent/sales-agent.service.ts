@@ -88,7 +88,7 @@ export async function gatherCandidates(deps: SalesAgentPrismaDeps, companyId: st
   const [salesRecords, products] = await Promise.all([
     accountIds.length > 0
       ? deps.salesRecord.findMany({
-          where: { companyId, accountId: { in: accountIds } },
+          where: { companyId, accountId: { in: accountIds }, cancelledAt: null },
           select: { accountId: true, date: true, orderValue: true },
         })
       : Promise.resolve([]),

@@ -5,7 +5,14 @@ import { requireRole } from "../../middleware/role.middleware.js";
 import { leadScoringRateLimiter } from "../../middleware/rate-limit.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { asyncHandler } from "../../lib/async-handler.js";
-import { opportunitiesQuerySchema } from "./opportunities.schema.js";
+import {
+  opportunitiesQuerySchema,
+  opportunityAccountsQuerySchema,
+  overdueAccountsQuerySchema,
+  overdueBillDetailParamsSchema,
+  overdueCustomerBillsParamsSchema,
+  overdueCustomerBillsQuerySchema,
+} from "./opportunities.schema.js";
 import * as opportunitiesService from "./opportunities.service.js";
 import * as opportunitiesController from "./opportunities.controller.js";
 
@@ -62,6 +69,39 @@ router.get(
   rateLimitIfGenerating,
   validate({ query: opportunitiesQuerySchema }),
   asyncHandler(opportunitiesController.list),
+);
+
+// One card's full list, paged. Same access as GET / (every signed-in role)
+// and the same rate limit when it has to generate — it never accepts
+// force, so it can only ever trigger the ordinary once-a-day generation.
+router.get(
+  "/accounts",
+  rateLimitIfGenerating,
+  validate({ query: opportunityAccountsQuerySchema }),
+  asyncHandler(opportunitiesController.listAccounts),
+);
+
+// Accounts with overdue payments — read-only from the FMS payment sheet,
+// separate from the opportunity types. Same access and rate-limit rules as
+// the lists above (it reads today's opportunity snapshot for its signals).
+router.get(
+  "/overdue",
+  rateLimitIfGenerating,
+  validate({ query: overdueAccountsQuerySchema }),
+  asyncHandler(opportunitiesController.listOverdue),
+);
+
+// One bill's details and one overdue customer's bills — read-only from the
+// FMS payment sheet, same access as /overdue. Neither generates opportunities.
+router.get(
+  "/overdue/bills/:billNo",
+  validate({ params: overdueBillDetailParamsSchema }),
+  asyncHandler(opportunitiesController.getOverdueBillDetail),
+);
+router.get(
+  "/overdue/:accountId/bills",
+  validate({ params: overdueCustomerBillsParamsSchema, query: overdueCustomerBillsQuerySchema }),
+  asyncHandler(opportunitiesController.listOverdueCustomerBills),
 );
 
 export default router;

@@ -14,7 +14,8 @@ export interface FmsApiSuccessBody {
 }
 
 export type ParsedFmsResponse =
-  | { status: "ok"; body: FmsApiSuccessBody }
+  /** `fetchedAt` is set by CachedFmsClient (fms-cache.ts): when the Apps Script actually answered. Absent on a direct, uncached fetch. */
+  | { status: "ok"; body: FmsApiSuccessBody; fetchedAt?: string }
   /** The Apps Script itself rejected the request (e.g. an unknown `sheet` name) — it responds HTTP 200 with `success: false` rather than a 4xx, confirmed against the live endpoint. */
   | { status: "upstream_rejected"; error: string; allowedSheets: string[] | null }
   /** Valid JSON, but not shaped like the Apps Script's documented response — never thrown, always returned, so a caller can surface a clear message instead of an uncaught exception. */

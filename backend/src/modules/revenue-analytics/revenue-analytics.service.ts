@@ -205,7 +205,7 @@ export interface RawBreakdownRow {
 async function groupSalesByField(deps: RevenueAnalyticsPrismaDeps, companyId: string, field: BreakdownField): Promise<RawBreakdownRow[]> {
   const groups = await deps.salesRecord.groupBy({
     by: [field],
-    where: { companyId, [field]: { not: null } },
+    where: { companyId, [field]: { not: null }, cancelledAt: null },
     _sum: { orderValue: true },
     _count: { _all: true },
   });
@@ -472,7 +472,7 @@ async function generate(deps: RevenueAnalyticsPrismaDeps, aiProvider: AIProvider
     // one query pass can also power per-item growthPct below — no second
     // round trip just to re-fetch the same rows with more columns.
     deps.salesRecord.findMany({
-      where: { companyId },
+      where: { companyId, cancelledAt: null },
       select: { date: true, orderValue: true, productId: true, stateId: true, industryId: true, salespersonId: true, distributorId: true },
     }),
     computeStateBreakdown(deps, companyId),

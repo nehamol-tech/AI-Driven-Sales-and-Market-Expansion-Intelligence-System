@@ -76,3 +76,28 @@ describe("getDashboardOverview with real sales data", () => {
     expect(dashboard.conversionRate).toEqual({ status: "insufficient_data" });
   });
 });
+
+describe("getDashboardOverview excludes cancelled sales", () => {
+  it("filters every SalesRecord query to cancelledAt: null", async () => {
+    const wheres: unknown[] = [];
+    const record = (result: unknown) => async (args: { where: unknown }) => {
+      wheres.push(args.where);
+      return result;
+    };
+    const prisma: DashboardPrismaDeps = {
+      salesRecord: {
+        aggregate: record({ _sum: { orderValue: null }, _count: { _all: 0 } }),
+        count: record(0),
+        findMany: record([]),
+        groupBy: record([]),
+      },
+      companyTargetState: { count: async () => 0 },
+      product: { findUnique: async () => null },
+    };
+
+    await getDashboardOverview(prisma, "company_1");
+
+    expect(wheres).toHaveLength(4);
+    for (const where of wheres) expect(where).toMatchObject({ companyId: "company_1", cancelledAt: null });
+  });
+});

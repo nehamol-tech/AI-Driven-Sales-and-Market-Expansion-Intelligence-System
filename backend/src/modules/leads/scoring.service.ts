@@ -350,7 +350,7 @@ export async function scoreAccount(deps: ScoringPrismaDeps, aiProvider: AIProvid
   }
 
   const [salesRecords, companyContext] = await Promise.all([
-    deps.salesRecord.findMany({ where: { accountId: account.id, companyId: params.companyId } }),
+    deps.salesRecord.findMany({ where: { accountId: account.id, companyId: params.companyId, cancelledAt: null } }),
     loadCompanyContext(deps, params.companyId),
   ]);
 

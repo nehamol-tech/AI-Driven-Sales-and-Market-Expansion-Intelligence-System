@@ -1,4 +1,13 @@
-import type { DailyPriorityLevel, OpportunityDTO, OpportunitySummaryDTO, OpportunityType, ScoreMethod } from "@ai-sales/shared";
+import type {
+  DailyPriorityLevel,
+  OpportunityAccountRowDTO,
+  OpportunityAccountsResponseDTO,
+  OpportunityCategory,
+  OpportunityDTO,
+  OpportunitySummaryDTO,
+  OpportunityType,
+  ScoreMethod,
+} from "@ai-sales/shared";
 import { OPPORTUNITY_TYPES } from "@ai-sales/shared";
 import type { AIProvider } from "../../lib/ai/ai-provider.interface.js";
 import { gatherAccountProfiles, type AccountProfile, type CrossSellProductCandidate, type OpportunitiesPrismaDeps } from "./account-profile.service.js";
@@ -14,7 +23,7 @@ import {
   type OpportunityCandidate,
 } from "./detectors.js";
 import { buildOpportunitiesPrompt } from "./opportunities.prompt.js";
-import { parseAIOpportunityResponse } from "./opportunities.schema.js";
+import { OPPORTUNITIES_DEFAULT_LIMIT, parseAIOpportunityResponse } from "./opportunities.schema.js";
 
 export type { OpportunitiesPrismaDeps } from "./account-profile.service.js";
 
@@ -222,6 +231,18 @@ interface CacheEntry {
   response: OpportunitySummaryDTO;
   /** The narration method used for this generation — stored alongside the DTO (not part of the DTO's own shape) so callers can log it accurately even when a type/priority filter narrows `opportunities` down to zero entries. */
   method: ScoreMethod;
+  /** EVERY detected candidate from this same generation, already ranked — the exact set `counts`/`highPriorityCount` were computed from. Backs the per-card detail lists. */
+  ranked: OpportunityCandidate[];
+  /** Per-account figures from this same generation's profiles, keyed by account id. */
+  accounts: Map<string, AccountFigures>;
+}
+
+interface AccountFigures {
+  industryName: string | null;
+  orderCount: number;
+  totalOrderValue: number;
+  lastOrderDate: Date | null;
+  recencyDays: number | null;
 }
 
 const cache = new Map<string, CacheEntry>();
@@ -259,7 +280,14 @@ export interface GetOpportunitiesResult {
   method: ScoreMethod;
 }
 
-async function generate(deps: OpportunitiesPrismaDeps, aiProvider: AIProvider, companyId: string, limit: number, now: Date): Promise<{ response: OpportunitySummaryDTO; method: ScoreMethod }> {
+interface Generated {
+  response: OpportunitySummaryDTO;
+  method: ScoreMethod;
+  ranked: OpportunityCandidate[];
+  accounts: Map<string, AccountFigures>;
+}
+
+async function generate(deps: OpportunitiesPrismaDeps, aiProvider: AIProvider, companyId: string, limit: number, now: Date): Promise<Generated> {
   const { profiles, products } = await gatherAccountProfiles(deps, companyId, now);
   const { candidates, counts, highPriorityCount } = detectAllOpportunities({ profiles, products }, now);
 
@@ -278,6 +306,19 @@ async function generate(deps: OpportunitiesPrismaDeps, aiProvider: AIProvider, c
       totalOpportunities: candidates.length,
     },
     method,
+    ranked,
+    accounts: new Map(
+      profiles.map((p) => [
+        p.id,
+        {
+          industryName: p.industryName,
+          orderCount: p.orderCount,
+          totalOrderValue: p.totalOrderValue,
+          lastOrderDate: p.lastOrderDate,
+          recencyDays: p.recencyDays,
+        },
+      ]),
+    ),
   };
 }
 
@@ -311,7 +352,7 @@ export async function getOpportunities(deps: OpportunitiesPrismaDeps, aiProvider
     const generated = await generate(deps, aiProvider, params.companyId, params.limit, now);
     response = generated.response;
     method = generated.method;
-    cache.set(params.companyId, { date: dateKey, response, method });
+    cache.set(params.companyId, { date: dateKey, response, method, ranked: generated.ranked, accounts: generated.accounts });
     wasGenerated = true;
   }
 
@@ -324,4 +365,135 @@ export async function getOpportunities(deps: OpportunitiesPrismaDeps, aiProvider
     wasGenerated,
     method,
   };
+}
+
+/* -------------------------------------------------------------------------
+ * Per-card detail lists — every opportunity behind one Opportunity Center
+ * card, paged server-side. Reads the SAME cached generation that produced
+ * the card counts (via getOpportunities, so a cache miss runs the exact same
+ * generation path a plain page load would), never a separate detection run:
+ * a card's count and its list therefore always describe one snapshot.
+ * ---------------------------------------------------------------------- */
+
+/** HIGH_PRIORITY is exactly the set `highPriorityCount` counts; each type is exactly the set `counts[type]` counts. */
+export function isInCategory(candidate: OpportunityCandidate, category: OpportunityCategory): boolean {
+  return category === "HIGH_PRIORITY" ? candidate.priority === "HIGH" : candidate.type === category;
+}
+
+export interface ListOpportunityAccountsParams {
+  companyId: string;
+  category: OpportunityCategory;
+  page: number;
+  pageSize: number;
+  /** Case-insensitive match on account name, account id, industry, or product name. */
+  search?: string;
+  /** Narrows within the category — e.g. HIGH_PRIORITY by type, or REORDER by priority. */
+  type?: OpportunityType;
+  priority?: DailyPriorityLevel;
+  now?: Date;
+}
+
+export interface ListOpportunityAccountsResult {
+  dto: OpportunityAccountsResponseDTO;
+  wasGenerated: boolean;
+  method: ScoreMethod;
+  summary: OpportunitySummaryDTO;
+}
+
+export async function listOpportunityAccounts(
+  deps: OpportunitiesPrismaDeps,
+  aiProvider: AIProvider,
+  params: ListOpportunityAccountsParams,
+): Promise<ListOpportunityAccountsResult> {
+  const now = params.now ?? new Date();
+  const { dto: summary, wasGenerated, method } = await getOpportunities(deps, aiProvider, {
+    companyId: params.companyId,
+    limit: OPPORTUNITIES_DEFAULT_LIMIT,
+    force: false,
+    now,
+  });
+  const entry = cache.get(params.companyId);
+  const ranked = entry?.ranked ?? [];
+  const accounts = entry?.accounts ?? new Map<string, AccountFigures>();
+  const narrated = new Map(summary.opportunities.map((o) => [o.id, o]));
+
+  const inCategory = ranked.filter((c) => isInCategory(c, params.category));
+  const needle = params.search?.trim().toLowerCase();
+  const filtered = inCategory.filter((c) => {
+    if (params.type && c.type !== params.type) return false;
+    if (params.priority && c.priority !== params.priority) return false;
+    if (!needle) return true;
+    const industry = accounts.get(c.leadId)?.industryName ?? "";
+    return [c.name, c.leadId, industry, c.productName ?? ""].some((field) => field.toLowerCase().includes(needle));
+  });
+
+  const start = (params.page - 1) * params.pageSize;
+  const rows: OpportunityAccountRowDTO[] = filtered.slice(start, start + params.pageSize).map((c) => {
+    const figures = accounts.get(c.leadId);
+    const narration = narrated.get(c.id);
+    return {
+      opportunityId: c.id,
+      type: c.type,
+      priority: c.priority,
+      accountId: c.leadId,
+      accountName: c.name,
+      industryName: figures?.industryName ?? null,
+      score: c.score,
+      classification: c.classification,
+      productName: c.productName,
+      orderCount: figures?.orderCount ?? 0,
+      totalOrderValue: (figures?.totalOrderValue ?? 0).toFixed(2),
+      lastOrderDate: figures?.lastOrderDate ? figures.lastOrderDate.toISOString() : null,
+      daysSinceLastOrder: figures?.recencyDays ?? null,
+      evidence: c.evidence,
+      reason: narration?.narrative ?? c.ruleBasedNarrative,
+      recommendedAction: narration?.recommendedAction ?? c.ruleBasedRecommendedAction,
+    };
+  });
+
+  return {
+    dto: {
+      data: rows,
+      pagination: { page: params.page, pageSize: params.pageSize, total: filtered.length },
+      category: params.category,
+      categoryTotal: inCategory.length,
+      categoryAccountCount: new Set(inCategory.map((c) => c.leadId)).size,
+      generatedAt: summary.generatedAt,
+    },
+    wasGenerated,
+    method,
+    summary,
+  };
+}
+
+/**
+ * Each account's detected opportunities ({type, priority}) from today's
+ * cached snapshot — the same one the Opportunity Center cards show — for
+ * views that annotate accounts with their opportunity signals (Overdue).
+ * A cold cache runs the normal generation path, exactly like a page load.
+ */
+export async function getOpportunitySignalsByAccount(
+  deps: OpportunitiesPrismaDeps,
+  aiProvider: AIProvider,
+  companyId: string,
+  now: Date = new Date(),
+): Promise<{
+  byAccount: Map<string, { type: OpportunityType; priority: DailyPriorityLevel }[]>;
+  summary: OpportunitySummaryDTO;
+  wasGenerated: boolean;
+  method: ScoreMethod;
+}> {
+  const { dto: summary, wasGenerated, method } = await getOpportunities(deps, aiProvider, {
+    companyId,
+    limit: OPPORTUNITIES_DEFAULT_LIMIT,
+    force: false,
+    now,
+  });
+  const byAccount = new Map<string, { type: OpportunityType; priority: DailyPriorityLevel }[]>();
+  for (const c of cache.get(companyId)?.ranked ?? []) {
+    const list = byAccount.get(c.leadId) ?? [];
+    list.push({ type: c.type, priority: c.priority });
+    byAccount.set(c.leadId, list);
+  }
+  return { byAccount, summary, wasGenerated, method };
 }
